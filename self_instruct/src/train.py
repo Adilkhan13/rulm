@@ -9,7 +9,7 @@ import numpy as np
 from transformers import AutoTokenizer, AutoModelForCausalLM, DataCollatorForTokenClassification, AutoConfig
 from transformers import Trainer, TrainingArguments, logging, TrainerCallback, TrainerState, TrainerControl, BitsAndBytesConfig
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
-from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training
+from peft import get_peft_model, LoraConfig, prepare_model_for_kbit_training, PeftConfig
 
 from src.dataset import ChatDataset
 from src.util.dl import set_random_seed, fix_tokenizer, fix_model
@@ -103,7 +103,8 @@ def train(
     sample_rate: float = 1.0,
     report_to: str = "wandb",
     seed: int = 42,
-    use_flash_attention_2: bool = False
+    use_flash_attention_2: bool = False,
+    base_model: bool = False
 ):
     set_random_seed(seed)
     logging.set_verbosity_info()
@@ -138,7 +139,10 @@ def train(
         trainer_config["gradient_accumulation_steps"] = gradient_accumulation_steps
 
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, use_fast=use_fast)
-    model_config = AutoConfig.from_pretrained(model_name)
+    if base_model:
+        model_config = AutoConfig.from_pretrained(model_name)
+    else:
+        model_config = PeftConfig.from_pretrained(model_name)
     tokenizer = fix_tokenizer(tokenizer, model_config)
     tokenizer.save_pretrained(output_dir)
 
